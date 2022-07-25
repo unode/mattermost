@@ -4419,6 +4419,24 @@ func (c *Client4) GetFileInfosForPost(postId string, etag string) ([]*FileInfo, 
 	return list, BuildResponse(r), nil
 }
 
+// GetFileInfosForPost gets all the file info objects attached to a post, including deleted
+func (c *Client4) GetFileInfosForPostIncludeDeleted(postId string, etag string) ([]*FileInfo, *Response, error) {
+	r, err := c.DoAPIGet(c.postRoute(postId)+"/files/info"+"?include_deleted="+c.boolString(true), etag)
+	if err != nil {
+		return nil, BuildResponse(r), err
+	}
+	defer closeBody(r)
+
+	var list []*FileInfo
+	if r.StatusCode == http.StatusNotModified {
+		return list, BuildResponse(r), nil
+	}
+	if jsonErr := json.NewDecoder(r.Body).Decode(&list); jsonErr != nil {
+		return nil, nil, NewAppError("GetFileInfosForPostIncludeDeleted", "api.unmarshal_error", nil, jsonErr.Error(), http.StatusInternalServerError)
+	}
+	return list, BuildResponse(r), nil
+}
+
 // General/System Section
 
 // GenerateSupportPacket downloads the generated support packet
@@ -7914,6 +7932,16 @@ func (c *Client4) RequestCloudTrial(email *StartCloudTrialRequest) (*Subscriptio
 	json.NewDecoder(r.Body).Decode(&subscription)
 
 	return subscription, BuildResponse(r), nil
+}
+
+func (c *Client4) ValidateWorkspaceBusinessEmail() (*Response, error) {
+	r, err := c.DoAPIPost(c.cloudRoute()+"/validate-workspace-business-email", "")
+	if err != nil {
+		return BuildResponse(r), err
+	}
+	defer closeBody(r)
+
+	return BuildResponse(r), nil
 }
 
 func (c *Client4) NotifyAdmin(nr *NotifyAdminToUpgradeRequest) int {
