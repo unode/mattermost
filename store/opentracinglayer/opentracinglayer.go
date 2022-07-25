@@ -1569,7 +1569,7 @@ func (s *OpenTracingLayerChannelStore) GetPinnedPostCount(channelID string, allo
 	return result, err
 }
 
-func (s *OpenTracingLayerChannelStore) GetPinnedPosts(channelID string) (*model.PostList, error) {
+func (s *OpenTracingLayerChannelStore) GetPinnedPosts(channelID string, userID string) (*model.PostList, error) {
 	origCtx := s.Root.Store.Context()
 	span, newCtx := tracing.StartSpanWithParentByContext(s.Root.Store.Context(), "ChannelStore.GetPinnedPosts")
 	s.Root.Store.SetContext(newCtx)
@@ -1578,7 +1578,7 @@ func (s *OpenTracingLayerChannelStore) GetPinnedPosts(channelID string) (*model.
 	}()
 
 	defer span.Finish()
-	result, err := s.ChannelStore.GetPinnedPosts(channelID)
+	result, err := s.ChannelStore.GetPinnedPosts(channelID, userID)
 	if err != nil {
 		span.LogFields(spanlog.Error(err))
 		ext.Error.Set(span, true)
