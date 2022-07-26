@@ -6957,7 +6957,7 @@ func testChannelStoreGetPinnedPosts(t *testing.T, ss store.Store) {
 		assert.Empty(t, posts.Posts[post3.Id].Participants)
 		assert.Empty(t, posts.Posts[post2.Id].Participants)
 		require.Len(t, posts.Posts[post1.Id].Participants, 1)
-		assert.Equal(t, post3.UserId, posts.Posts[post1.Id].Participants[0])
+		assert.Equal(t, post3.UserId, posts.Posts[post1.Id].Participants[0].Id)
 	})
 }
 
