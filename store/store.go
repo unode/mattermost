@@ -387,6 +387,9 @@ type PostStore interface {
 	HasAutoResponsePostByUserSince(options model.GetPostsSinceOptions, userId string) (bool, error)
 	GetPostsSinceForSync(options model.GetPostsSinceForSyncOptions, cursor model.GetPostsSinceForSyncCursor, limit int) ([]*model.Post, model.GetPostsSinceForSyncCursor, error)
 	PrepareThreadedResponse(posts []*model.PostWithCRTMetadata, extended, reversed bool, sanitizeOptions map[string]bool) (*model.PostList, error)
+	SetPostReminder(reminder *model.PostReminder) error
+	GetPostReminders(now int64) ([]*model.PostReminder, error)
+	GetPostReminderMetadata(postID string) (*PostReminderMetadata, error)
 	// GetNthRecentPostTime returns the CreateAt time of the nth most recent post.
 	GetNthRecentPostTime(n int64) (int64, error)
 }
@@ -1018,6 +1021,15 @@ type ChannelMemberGraphQLSearchOpts struct {
 	Limit        int
 	LastUpdateAt int
 	ExcludeTeam  bool
+}
+
+// PostReminderMetadata contains some info needed to send
+// the reminder message to the user.
+type PostReminderMetadata struct {
+	ChannelId  string
+	TeamName   string
+	UserLocale string
+	Username   string
 }
 
 // SidebarCategorySearchOpts contains the options for a graphQL query
