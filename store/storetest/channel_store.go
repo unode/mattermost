@@ -6896,16 +6896,17 @@ func testChannelStoreGetPinnedPosts(t *testing.T, ss store.Store) {
 	require.NoError(t, errGet, errGet)
 	require.Empty(t, pl.Posts, "wasn't supposed to return posts")
 
-	t.Run("with correct ReplyCount", func(t *testing.T) {
+	t.Run("with correct CRT meta data", func(t *testing.T) {
 		channelId := model.NewId()
 
 		user, err := ss.User().Save(&model.User{Email: MakeEmail()})
 		require.NoError(t, err)
-		userId := user.Id
+		user2, err := ss.User().Save(&model.User{Email: MakeEmail()})
+		require.NoError(t, err)
 
 		post1, err := ss.Post().Save(&model.Post{
 			ChannelId: channelId,
-			UserId:    userId,
+			UserId:    user.Id,
 			Message:   "message",
 			IsPinned:  true,
 		})
@@ -6914,7 +6915,7 @@ func testChannelStoreGetPinnedPosts(t *testing.T, ss store.Store) {
 
 		post2, err := ss.Post().Save(&model.Post{
 			ChannelId: channelId,
-			UserId:    userId,
+			UserId:    model.NewId(),
 			Message:   "message",
 			IsPinned:  true,
 		})
@@ -6923,7 +6924,7 @@ func testChannelStoreGetPinnedPosts(t *testing.T, ss store.Store) {
 
 		post3, err := ss.Post().Save(&model.Post{
 			ChannelId: channelId,
-			UserId:    userId,
+			UserId:    user2.Id,
 			RootId:    post1.Id,
 			Message:   "message",
 			IsPinned:  true,
@@ -6931,12 +6932,32 @@ func testChannelStoreGetPinnedPosts(t *testing.T, ss store.Store) {
 		require.NoError(t, err)
 		time.Sleep(time.Millisecond)
 
-		posts, err := ss.Channel().GetPinnedPosts(channelId, userId)
+		_, err = ss.Thread().MaintainMembership(post2.UserId, post1.Id, store.ThreadMembershipOpts{
+			Following:       true,
+			UpdateFollowing: true,
+		})
+		require.NoError(t, err)
+
+		posts, err := ss.Channel().GetPinnedPosts(channelId, post2.UserId)
 		require.NoError(t, err)
 		require.Len(t, posts.Posts, 3)
+
 		assert.Equal(t, int64(1), posts.Posts[post1.Id].ReplyCount)
 		assert.Equal(t, int64(0), posts.Posts[post2.Id].ReplyCount)
 		assert.Equal(t, int64(0), posts.Posts[post3.Id].ReplyCount)
+
+		assert.Equal(t, posts.Posts[post3.Id].CreateAt, posts.Posts[post1.Id].LastReplyAt)
+		assert.Equal(t, int64(0), posts.Posts[post2.Id].LastReplyAt)
+		assert.Equal(t, int64(0), posts.Posts[post3.Id].LastReplyAt)
+
+		assert.True(t, *posts.Posts[post1.Id].IsFollowing)
+		assert.Nil(t, posts.Posts[post2.Id].IsFollowing)
+		assert.Nil(t, posts.Posts[post3.Id].IsFollowing)
+
+		assert.Empty(t, posts.Posts[post3.Id].Participants)
+		assert.Empty(t, posts.Posts[post2.Id].Participants)
+		require.Len(t, posts.Posts[post1.Id].Participants, 1)
+		assert.Equal(t, post3.UserId, posts.Posts[post1.Id].Participants[0])
 	})
 }
 
