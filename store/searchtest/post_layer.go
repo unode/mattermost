@@ -271,7 +271,7 @@ var searchPostStoreTests = []searchTest{
 	{
 		Name: "Should search with CRT MetaData",
 		Fn:   testSearchWithCRTMetaData,
-		Tags: []string{EngineAll},
+		Tags: []string{EngineMySql, EnginePostgres},
 	},
 }
 
