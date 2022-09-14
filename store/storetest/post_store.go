@@ -1714,6 +1714,18 @@ func testPostStoreGetPostsBeforeAfter(t *testing.T, ss store.Store) {
 }
 
 func testPostStoreGetPostsSince(t *testing.T, ss store.Store) {
+	t.Run("should return error if negative Page/PerPage options are passed", func(t *testing.T) {
+		postList, err := ss.Post().GetPostsSince(model.GetPostsSinceOptions{Page: 1, PerPage: 0}, false, map[string]bool{})
+		assert.Nil(t, postList)
+		assert.Error(t, err)
+		assert.IsType(t, &store.ErrInvalidInput{}, err)
+
+		postList, err = ss.Post().GetPostsSince(model.GetPostsSinceOptions{Page: -1, PerPage: 1}, false, map[string]bool{})
+		assert.Nil(t, postList)
+		assert.Error(t, err)
+		assert.IsType(t, &store.ErrInvalidInput{}, err)
+	})
+
 	t.Run("should return posts created after the given time", func(t *testing.T) {
 		channelId := model.NewId()
 		userId := model.NewId()
@@ -1768,7 +1780,7 @@ func testPostStoreGetPostsSince(t *testing.T, ss store.Store) {
 		require.NoError(t, err)
 		time.Sleep(time.Millisecond)
 
-		postList, err := ss.Post().GetPostsSince(model.GetPostsSinceOptions{ChannelId: channelId, Time: post3.CreateAt}, false, map[string]bool{})
+		postList, err := ss.Post().GetPostsSince(model.GetPostsSinceOptions{ChannelId: channelId, Time: post3.CreateAt, PerPage: 10}, false, map[string]bool{})
 		require.NoError(t, err)
 
 		assert.Equal(t, []string{
@@ -1785,6 +1797,18 @@ func testPostStoreGetPostsSince(t *testing.T, ss store.Store) {
 		assert.NotNil(t, postList.Posts[post4.Id])
 		assert.NotNil(t, postList.Posts[post5.Id])
 		assert.NotNil(t, postList.Posts[post6.Id])
+
+		t.Run("should limit posts", func(t *testing.T) {
+			postList, err = ss.Post().GetPostsSince(model.GetPostsSinceOptions{ChannelId: channelId, Time: post3.UpdateAt, PerPage: 2}, false, map[string]bool{})
+			require.NoError(t, err)
+			assert.Len(t, postList.Posts, 2)
+			assert.Equal(t, []string{
+				post6.Id,
+				post5.Id,
+			}, postList.Order)
+			assert.NotNil(t, postList.Posts[post6.Id])
+			assert.NotNil(t, postList.Posts[post5.Id])
+		})
 	})
 
 	t.Run("should return empty list when nothing has changed", func(t *testing.T) {
@@ -1799,7 +1823,7 @@ func testPostStoreGetPostsSince(t *testing.T, ss store.Store) {
 		require.NoError(t, err)
 		time.Sleep(time.Millisecond)
 
-		postList, err := ss.Post().GetPostsSince(model.GetPostsSinceOptions{ChannelId: channelId, Time: post1.CreateAt}, false, map[string]bool{})
+		postList, err := ss.Post().GetPostsSince(model.GetPostsSinceOptions{ChannelId: channelId, Time: post1.CreateAt, PerPage: 10}, false, map[string]bool{})
 		assert.NoError(t, err)
 
 		assert.Equal(t, []string{}, postList.Order)
@@ -1821,12 +1845,12 @@ func testPostStoreGetPostsSince(t *testing.T, ss store.Store) {
 		time.Sleep(time.Millisecond)
 
 		// Make a request that returns no results
-		postList, err := ss.Post().GetPostsSince(model.GetPostsSinceOptions{ChannelId: channelId, Time: post1.CreateAt}, true, map[string]bool{})
+		postList, err := ss.Post().GetPostsSince(model.GetPostsSinceOptions{ChannelId: channelId, Time: post1.CreateAt, PerPage: 10}, true, map[string]bool{})
 		require.NoError(t, err)
 		require.Equal(t, model.NewPostList(), postList)
 
 		// And then ensure that it doesn't cause future requests to also return no results
-		postList, err = ss.Post().GetPostsSince(model.GetPostsSinceOptions{ChannelId: channelId, Time: post1.CreateAt - 1}, true, map[string]bool{})
+		postList, err = ss.Post().GetPostsSince(model.GetPostsSinceOptions{ChannelId: channelId, Time: post1.CreateAt - 1, PerPage: 10}, true, map[string]bool{})
 		require.NoError(t, err)
 
 		assert.Equal(t, []string{post1.Id}, postList.Order)
