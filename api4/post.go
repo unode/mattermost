@@ -158,6 +158,9 @@ func getPostsForChannel(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	page := c.Params.Page
+	perPage := c.Params.PerPage
+
 	afterPost := r.URL.Query().Get("after")
 	if afterPost != "" && !model.IsValidId(afterPost) {
 		c.SetInvalidParam("after")
@@ -179,13 +182,18 @@ func getPostsForChannel(c *Context, w http.ResponseWriter, r *http.Request) {
 			c.SetInvalidParam("since")
 			return
 		}
+
+		// In case of "since" route, return all items by default for now, to maintain
+		// backwards compatibility with mobile. But when the next ESR passes, just
+		// remove this "if" block.
+		if perPageStr := r.URL.Query().Get("per_page"); perPageStr == "" {
+			perPage = 0
+		}
 	}
 	skipFetchThreads := r.URL.Query().Get("skipFetchThreads") == "true"
 	collapsedThreads := r.URL.Query().Get("collapsedThreads") == "true"
 	collapsedThreadsExtended := r.URL.Query().Get("collapsedThreadsExtended") == "true"
 	channelId := c.Params.ChannelId
-	page := c.Params.Page
-	perPage := c.Params.PerPage
 
 	if !c.App.SessionHasPermissionToChannel(c.AppContext, *c.AppContext.Session(), channelId, model.PermissionReadChannel) {
 		c.SetPermissionError(model.PermissionReadChannel)
