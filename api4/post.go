@@ -184,8 +184,7 @@ func getPostsForChannel(c *Context, w http.ResponseWriter, r *http.Request) {
 		}
 
 		// In case of "since" route, return all items by default for now, to maintain
-		// backwards compatibility with mobile. But when the next ESR passes, just
-		// remove this "if" block.
+		// backwards compatibility with mobile.
 		if perPageStr := r.URL.Query().Get("per_page"); perPageStr == "" {
 			perPage = 0
 		}
