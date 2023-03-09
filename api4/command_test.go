@@ -1064,4 +1064,25 @@ func TestExecuteCommandInTeamUserIsNotOn(t *testing.T) {
 	_, resp, err = client.ExecuteCommand(dmChannel.Id, "/postcommand")
 	require.Error(t, err)
 	CheckForbiddenStatus(t, resp)
+
+	// TODO
+	_, resp, err = client.ExecuteCommandWithTeam(th.BasicChannel.Id, th.BasicChannel.TeamId, "/postcommand")
+	require.NoError(t, err)
+	CheckOKStatus(t, resp)
+
+	_, resp, err = client.PatchChannelModerations(
+		th.BasicChannel.Id, []*model.ChannelModerationPatch{{
+			Name: &model.PermissionCreatePost.Id,
+			Roles: &model.ChannelModeratedRolesPatch{
+				Guests:  model.NewBool(false),
+				Members: model.NewBool(false),
+			},
+		}})
+	require.NoError(t, err)
+	CheckOKStatus(t, resp)
+
+	// TODO
+	_, resp, err = client.ExecuteCommandWithTeam(th.BasicChannel.Id, th.BasicChannel.TeamId, "/postcommand")
+	require.Error(t, err)
+	CheckForbiddenStatus(t, resp)
 }
