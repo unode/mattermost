@@ -79,6 +79,8 @@ type FeatureFlags struct {
 	GlobalDrafts bool
 
 	OnboardingTourTips bool
+
+	NewUI bool
 }
 
 func (f *FeatureFlags) SetDefaults() {
@@ -109,6 +111,7 @@ func (f *FeatureFlags) SetDefaults() {
 	f.WysiwygEditor = false
 	f.OnboardingAutoShowLinkedBoard = true
 	f.OnboardingTourTips = true
+	f.NewUI = false
 }
 
 func (f *FeatureFlags) Plugins() map[string]string {

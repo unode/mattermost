@@ -20,6 +20,7 @@
   },
   "workspaces": [
     "channels",
+    "platform/compass-ui",
     "platform/client",
     "platform/components",
     "platform/types",
