@@ -3861,6 +3861,26 @@ func TestUpdateChannelScheme(t *testing.T) {
 	CheckUnauthorizedStatus(t, resp)
 }
 
+func TestGetThreadsForChannel(t *testing.T) {
+	t.Run("should can return only total count", func(t *testing.T) {
+		th := Setup(t).InitBasic()
+		defer th.TearDown()
+
+		rootPost := th.CreatePost()
+		for i := 0; i < 10; i++ {
+			th.CreateThreadPost(rootPost.Id)
+		}
+
+		opts := model.GetChannelThreadsOpts{TotalsOnly: true}
+
+		threads, resp, err := th.Client.GetThreadsForChannel(th.BasicChannel.Id, opts)
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+		require.Equal(t, int64(10), threads.Total)
+		require.Nil(t, threads.Threads)
+	})
+}
+
 func TestGetChannelMembersTimezones(t *testing.T) {
 	th := Setup(t).InitBasic()
 	defer th.TearDown()

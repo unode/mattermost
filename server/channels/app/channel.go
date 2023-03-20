@@ -3572,3 +3572,22 @@ func (a *App) GetTopInactiveChannelsForUserSince(c request.CTX, teamID, userID s
 	}
 	return topChannels, nil
 }
+
+func (a *App) GetThreadsForChannel(channelID string, opts model.GetChannelThreadsOpts) (*model.Threads, *model.AppError) {
+	var result model.Threads
+
+	threadResponses, err := a.Srv().Store().Thread().GetThreadsForChannel(channelID, opts)
+	if err != nil {
+		return nil, model.NewAppError("GetThreadsForChannel", "app.channel.get_threads.app_error", nil, "", http.StatusInternalServerError).Wrap(err)
+	}
+
+	result.Threads = threadResponses
+	result.Total = int64(len(threadResponses))
+
+	for _, thread := range result.Threads {
+		a.sanitizeProfiles(thread.Participants, false)
+		thread.Post.SanitizeProps()
+	}
+
+	return &result, nil
+}
