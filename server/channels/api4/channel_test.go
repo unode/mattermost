@@ -3868,7 +3868,7 @@ func TestGetThreadsForChannel(t *testing.T) {
 
 		rootPost := th.CreatePost()
 		for i := 0; i < 10; i++ {
-			th.CreateThreadPost(rootPost.Id)
+			th.CreateThreadPost(rootPost)
 		}
 
 		opts := model.GetChannelThreadsOpts{TotalsOnly: true}

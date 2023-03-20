@@ -701,8 +701,8 @@ func (th *TestHelper) CreateMessagePost(message string) *model.Post {
 	return th.CreateMessagePostWithClient(th.Client, th.BasicChannel, message)
 }
 
-func (th *TestHelper) CreateThreadPost(rootID string) *model.Post {
-	return th.CreateThreadPostWithClient(th.Client, th.BasicChannel, rootID)
+func (th *TestHelper) CreateThreadPost(rootPost *model.Post) *model.Post {
+	return th.CreateThreadPostWithClient(th.Client, th.BasicChannel, rootPost)
 }
 
 func (th *TestHelper) CreatePostWithFiles(files ...*model.FileInfo) *model.Post {
@@ -800,13 +800,13 @@ func (th *TestHelper) CreateDmChannel(user *model.User) *model.Channel {
 	return channel
 }
 
-func (th *TestHelper) CreateThreadPostWithClient(client *model.Client4, channel *model.Channel, rootID string) *model.Post {
+func (th *TestHelper) CreateThreadPostWithClient(client *model.Client4, channel *model.Channel, rootPost *model.Post) *model.Post {
 	id := model.NewId()
 
 	post := &model.Post{
 		ChannelId: channel.Id,
 		Message:   "message_" + id,
-		RootId:    rootID,
+		RootId:    rootPost.Id,
 	}
 
 	threadPost, _, err := client.CreatePost(post)
