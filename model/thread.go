@@ -77,6 +77,9 @@ type GetChannelThreadsOpts struct {
 
 	// TotalsOnly will not fetch any threads and just fetch the total counts
 	TotalsOnly bool
+
+	// ThreadsOnly will fetch threads but not calculate totals and will return 0
+	ThreadsOnly bool
 }
 
 type GetUserThreadsOpts struct {

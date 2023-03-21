@@ -6,13 +6,14 @@ package app
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/mattermost/logr/v2"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
@@ -3575,18 +3576,39 @@ func (a *App) GetTopInactiveChannelsForUserSince(c request.CTX, teamID, userID s
 
 func (a *App) GetThreadsForChannel(channelID string, opts model.GetChannelThreadsOpts) (*model.Threads, *model.AppError) {
 	var result model.Threads
+	var eg errgroup.Group
 
-	threadResponses, err := a.Srv().Store().Thread().GetThreadsForChannel(channelID, opts)
-	if err != nil {
-		return nil, model.NewAppError("GetThreadsForChannel", "app.channel.get_threads.app_error", nil, "", http.StatusInternalServerError).Wrap(err)
+	if !opts.ThreadsOnly {
+		eg.Go(func() error {
+			totalThreads, err := a.Srv().Store().Thread().GetTotalThreadsForChannel(channelID, opts)
+			if err != nil {
+				return errors.Wrapf(err, "failed to count threads for channel id=%s", channelID)
+			}
+			result.Total = totalThreads
+
+			return nil
+		})
 	}
 
-	result.Threads = threadResponses
-	result.Total = int64(len(threadResponses))
+	if !opts.TotalsOnly {
+		eg.Go(func() error {
+			threadResponses, err := a.Srv().Store().Thread().GetThreadsForChannel(channelID, opts)
+			if err != nil {
+				return errors.Wrapf(err, "failed to get threads for channel id=%s", channelID)
+			}
+			result.Threads = threadResponses
 
-	for _, thread := range result.Threads {
-		a.sanitizeProfiles(thread.Participants, false)
-		thread.Post.SanitizeProps()
+			for _, thread := range result.Threads {
+				a.sanitizeProfiles(thread.Participants, false)
+				thread.Post.SanitizeProps()
+			}
+
+			return nil
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		return nil, model.NewAppError("GetThreadsForChannel", "app.channel.get_threads.app_error", nil, "", http.StatusInternalServerError).Wrap(err)
 	}
 
 	return &result, nil

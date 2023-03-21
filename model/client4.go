@@ -8392,9 +8392,9 @@ func (c *Client4) GetThreadsForChannel(channelID string, opts GetChannelThreadsO
 	//if opts.Extended {
 	//	v.Set("extended", "true")
 	//}
-	//if opts.Deleted {
-	//	v.Set("deleted", "true")
-	//}
+	if opts.Deleted {
+		v.Set("deleted", "true")
+	}
 	//if opts.Unread {
 	//	v.Set("unread", "true")
 	//}
@@ -8402,7 +8402,7 @@ func (c *Client4) GetThreadsForChannel(channelID string, opts GetChannelThreadsO
 	//	v.Set("threadsOnly", "true")
 	//}
 	if opts.TotalsOnly {
-		v.Set("totalsOnly", "true")
+		v.Set("totals_only", "true")
 	}
 
 	u := c.channelThreadsRoute(channelID)
