@@ -604,16 +604,16 @@ func (s *SqlThreadStore) GetThreadsForChannel(channelID string, opts model.GetCh
 	query = query.
 		Where(sq.Eq{"ThreadMemberships.Following": true})
 
-	//if opts.IncludeIsUrgent {
-	//	urgencyCase := sq.
-	//		Case().
-	//		When(sq.Eq{"PostsPriority.Priority": model.PostPriorityUrgent}, "true").
-	//		Else("false")
-	//
-	//	query = query.
-	//		Column(sq.Alias(urgencyCase, "IsUrgent")).
-	//		LeftJoin("PostsPriority ON PostsPriority.PostId = Threads.PostId")
-	//}
+	if opts.IncludeIsUrgent {
+		urgencyCase := sq.
+			Case().
+			When(sq.Eq{"PostsPriority.Priority": model.PostPriorityUrgent}, "true").
+			Else("false")
+
+		query = query.
+			Column(sq.Alias(urgencyCase, "IsUrgent")).
+			LeftJoin("PostsPriority ON PostsPriority.PostId = Threads.PostId")
+	}
 
 	if !opts.Deleted {
 		query = query.Where(sq.Or{
@@ -682,7 +682,7 @@ func (s *SqlThreadStore) GetThreadsForChannel(channelID string, opts model.GetCh
 
 	result := make([]*model.ThreadResponse, 0, len(threads))
 	for _, thread := range threads {
-		result = append(result, thread.toThreadResponse(nil))
+		result = append(result, thread.toThreadResponse(allParticipants))
 	}
 
 	return result, nil

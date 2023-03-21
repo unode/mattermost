@@ -3578,6 +3578,11 @@ func (a *App) GetThreadsForChannel(channelID string, opts model.GetChannelThread
 	var result model.Threads
 	var eg errgroup.Group
 
+	postPriorityIsEnabled := a.isPostPriorityEnabled()
+	if postPriorityIsEnabled {
+		opts.IncludeIsUrgent = true
+	}
+
 	if !opts.ThreadsOnly {
 		eg.Go(func() error {
 			totalThreads, err := a.Srv().Store().Thread().GetTotalThreadsForChannel(channelID, opts)

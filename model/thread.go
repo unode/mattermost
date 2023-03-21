@@ -80,6 +80,9 @@ type GetChannelThreadsOpts struct {
 
 	// ThreadsOnly will fetch threads but not calculate totals and will return 0
 	ThreadsOnly bool
+
+	// IncludeIsUrgent will return IsUrgent field as well to assert is the thread is urgent or not
+	IncludeIsUrgent bool
 }
 
 type GetUserThreadsOpts struct {
