@@ -2497,11 +2497,7 @@ const AdminDefinition = {
                             it.not(it.userHasWritePermissionOnResource(RESOURCE_KEYS.SITE.NOTIFICATIONS)),
                             it.stateIsFalse('EmailSettings.SendEmailNotifications'),
                         ),
-
-                        // MM-50952
-                        // If the setting is hidden, then it is not being set in state so there is
-                        // nothing to validate, and validation would fail anyways and prevent saving
-                        validate: it.configIsFalse('ExperimentalSettings', 'RestrictSystemAdmin') && validators.isRequired(t('admin.environment.notifications.feedbackEmail.required'), '"Notification From Address" is required'),
+                        validate: validators.isRequired(t('admin.environment.notifications.feedbackEmail.required'), '"Notification From Address" is required'),
                     },
                     {
                         type: Constants.SettingsTypes.TYPE_TEXT,
@@ -6709,7 +6705,7 @@ const AdminDefinition = {
                         label: t('admin.experimental.enableTutorial.title'),
                         label_default: 'Enable Tutorial:',
                         help_text: t('admin.experimental.enableTutorial.desc'),
-                        help_text_default: 'When true, users are prompted with a tutorial when they open Mattermost for the first time after account creation. When false, the tutorial is disabled, and users are placed in Town Square when they open Mattermost for the first time after account creation.',
+                        help_text_default: 'When true, users are prompted with a tutorial when they open Mattermost for the first time after account creation. When false, the tutorial is disabled, and users are placed in Town Square (aka General) when they open Mattermost for the first time after account creation.',
                         help_text_markdown: false,
                         isDisabled: it.not(it.userHasWritePermissionOnResource(RESOURCE_KEYS.EXPERIMENTAL.FEATURES)),
                     },
