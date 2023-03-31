@@ -51,6 +51,16 @@ func setupTestHelper(dbStore store.Store, enterprise bool, includeCacheLayer boo
 	if configSet != nil {
 		configSet(memoryConfig)
 	}
+
+	mainHelperConfig := &model.Config{
+		SqlSettings: *mainHelper.GetSQLSettings(),
+	}
+
+	memoryConfig, err = config.Merge(memoryConfig, mainHelperConfig, nil)
+	if err != nil {
+		panic(err)
+	}
+
 	*memoryConfig.PluginSettings.Directory = filepath.Join(tempWorkspace, "plugins")
 	*memoryConfig.PluginSettings.ClientDirectory = filepath.Join(tempWorkspace, "webapp")
 	*memoryConfig.PluginSettings.AutomaticPrepackagedPlugins = false

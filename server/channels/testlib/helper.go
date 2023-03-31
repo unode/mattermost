@@ -41,6 +41,11 @@ type HelperOptions struct {
 }
 
 func NewMainHelper() *MainHelper {
+	// Ignore any globally defined datasource if a test dsn defined
+	if os.Getenv("TEST_DATABASE_MYSQL_DSN") != "" || os.Getenv("TEST_DATABASE_POSTGRESQL_DSN") != "" {
+		os.Unsetenv("MM_SQLSETTINGS_DATASOURCE")
+	}
+
 	return NewMainHelperWithOptions(&HelperOptions{
 		EnableStore:     true,
 		EnableResources: true,
@@ -48,6 +53,11 @@ func NewMainHelper() *MainHelper {
 }
 
 func NewMainHelperWithOptions(options *HelperOptions) *MainHelper {
+	// Ignore any globally defined datasource if a test dsn defined
+	if os.Getenv("TEST_DATABASE_MYSQL_DSN") != "" || os.Getenv("TEST_DATABASE_POSTGRESQL_DSN") != "" {
+		os.Unsetenv("MM_SQLSETTINGS_DATASOURCE")
+	}
+
 	var mainHelper MainHelper
 	flag.Parse()
 
@@ -150,9 +160,14 @@ func (h *MainHelper) setupResources() {
 // pg_dump -a -h localhost -U mmuser -d <> --no-comments --inserts -t roles -t systems
 // mysqldump -u root -p <> --no-create-info --extended-insert=FALSE Systems Roles
 // And keep only the permission related rows in the systems table output.
+//
+// In the case of boards, regenerate using:
+// pg_dump -a -h localhost -U mmuser -d <> --no-comments --inserts -t focalboard_system_settings
+// mysqldump -u root -p <> --no-create-info --extended-insert=FALSE focalboard_system_settings
 func (h *MainHelper) PreloadMigrations() {
 	var buf []byte
 	var err error
+	var tableSchemaFn string
 	basePath := os.Getenv("MM_SERVER_PATH")
 	if basePath == "" {
 		basePath = "mattermost-server/server"
@@ -165,17 +180,53 @@ func (h *MainHelper) PreloadMigrations() {
 		if err != nil {
 			panic(fmt.Errorf("cannot read file: %v", err))
 		}
+		tableSchemaFn = "current_schema()"
 	case model.DatabaseDriverMysql:
 		finalPath := filepath.Join(basePath, relPath, "mysql_migration_warmup.sql")
 		buf, err = os.ReadFile(finalPath)
 		if err != nil {
 			panic(fmt.Errorf("cannot read file: %v", err))
 		}
+		tableSchemaFn = "DATABASE()"
 	}
 	handle := h.SQLStore.GetMasterX()
 	_, err = handle.Exec(string(buf))
 	if err != nil {
 		panic(errors.Wrap(err, "Error preloading migrations. Check if you have &multiStatements=true in your DSN if you are using MySQL. Or perhaps the schema changed? If yes, then update the warmup files accordingly"))
+	}
+
+	// Boards
+	var boardsSchemaMigrationTableCount int
+	gErr := handle.Get(&boardsSchemaMigrationTableCount, `
+      SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.TABLES
+       WHERE TABLE_SCHEMA = `+tableSchemaFn+`
+         AND TABLE_NAME = 'focalboard_schema_migrations'`)
+	if gErr != nil {
+		panic(errors.Wrap(gErr, "Error preloading migrations. Cannot query INFORMATION_SCHEMA table to check for focalboard_schema_migrations table"))
+	}
+
+	var bbuf []byte
+	var berr error
+	if boardsSchemaMigrationTableCount != 0 {
+		switch *h.Settings.DriverName {
+		case model.DatabaseDriverPostgres:
+			boardsFinalPath := filepath.Join(basePath, relPath, "boards_postgres_migration_warmup.sql")
+			bbuf, berr = os.ReadFile(boardsFinalPath)
+			if berr != nil {
+				panic(fmt.Errorf("cannot read file: %v", berr))
+			}
+		case model.DatabaseDriverMysql:
+			boardsFinalPath := filepath.Join(basePath, relPath, "boards_mysql_migration_warmup.sql")
+			bbuf, berr = os.ReadFile(boardsFinalPath)
+			if berr != nil {
+				panic(fmt.Errorf("cannot read file: %v", berr))
+			}
+		}
+		if _, err := handle.Exec(string(bbuf)); err != nil {
+			panic(errors.Wrap(err, "Error preloading boards migrations. Check if you have &multiStatements=true in your DSN if you are using MySQL. Or perhaps the schema changed? If yes, then update the warmup files accordingly"))
+		}
+
 	}
 }
 

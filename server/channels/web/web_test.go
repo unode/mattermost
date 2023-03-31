@@ -74,6 +74,17 @@ func Setup(tb testing.TB) *TestHelper {
 func setupTestHelper(tb testing.TB, includeCacheLayer bool) *TestHelper {
 	memoryStore := config.NewTestMemoryStore()
 	newConfig := memoryStore.Get().Clone()
+
+	mainHelperConfig := &model.Config{
+		SqlSettings: *mainHelper.GetSQLSettings(),
+	}
+
+	var err error
+	newConfig, err = config.Merge(newConfig, mainHelperConfig, nil)
+	if err != nil {
+		panic(err)
+	}
+
 	*newConfig.AnnouncementSettings.AdminNoticesEnabled = false
 	*newConfig.AnnouncementSettings.UserNoticesEnabled = false
 	*newConfig.PluginSettings.AutomaticPrepackagedPlugins = false

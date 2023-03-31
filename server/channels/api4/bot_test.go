@@ -633,6 +633,13 @@ func TestGetBots(t *testing.T) {
 	th := Setup(t).InitBasic()
 	defer th.TearDown()
 
+	// First we remove all existing bots
+	existingBots, bErr := th.App.GetBots(&model.BotGetOptions{Page: 0, PerPage: 9999})
+	require.Nil(t, bErr)
+	for _, bot := range existingBots {
+		th.App.PermanentDeleteBot(bot.UserId)
+	}
+
 	th.App.UpdateConfig(func(cfg *model.Config) {
 		*cfg.ServiceSettings.EnableBotAccountCreation = true
 	})

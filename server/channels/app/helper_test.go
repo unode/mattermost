@@ -52,8 +52,17 @@ func setupTestHelper(dbStore store.Store, enterprise bool, includeCacheLayer boo
 	}
 
 	configStore := config.NewTestMemoryStore()
-
 	memoryConfig := configStore.Get()
+
+	mainHelperConfig := &model.Config{
+		SqlSettings: *mainHelper.GetSQLSettings(),
+	}
+
+	memoryConfig, err = config.Merge(memoryConfig, mainHelperConfig, nil)
+	if err != nil {
+		panic(err)
+	}
+
 	*memoryConfig.PluginSettings.Directory = filepath.Join(tempWorkspace, "plugins")
 	*memoryConfig.PluginSettings.ClientDirectory = filepath.Join(tempWorkspace, "webapp")
 	*memoryConfig.PluginSettings.AutomaticPrepackagedPlugins = false
@@ -163,7 +172,8 @@ func SetupWithoutPreloadMigrations(tb testing.TB) *TestHelper {
 
 func SetupWithStoreMock(tb testing.TB) *TestHelper {
 	mockStore := testlib.GetMockStoreForSetupFunctions()
-	th := setupTestHelper(mockStore, false, false, nil, tb)
+	setupOptions := []Option{SkipProductsInitialization()}
+	th := setupTestHelper(mockStore, false, false, setupOptions, tb)
 	statusMock := mocks.StatusStore{}
 	statusMock.On("UpdateExpiredDNDStatuses").Return([]*model.Status{}, nil)
 	statusMock.On("Get", "user1").Return(&model.Status{UserId: "user1", Status: model.StatusOnline}, nil)
@@ -184,7 +194,8 @@ func SetupWithStoreMock(tb testing.TB) *TestHelper {
 
 func SetupEnterpriseWithStoreMock(tb testing.TB) *TestHelper {
 	mockStore := testlib.GetMockStoreForSetupFunctions()
-	th := setupTestHelper(mockStore, true, false, nil, tb)
+	setupOptions := []Option{SkipProductsInitialization()}
+	th := setupTestHelper(mockStore, true, false, setupOptions, tb)
 	statusMock := mocks.StatusStore{}
 	statusMock.On("UpdateExpiredDNDStatuses").Return([]*model.Status{}, nil)
 	statusMock.On("Get", "user1").Return(&model.Status{UserId: "user1", Status: model.StatusOnline}, nil)
